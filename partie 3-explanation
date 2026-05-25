@@ -1,0 +1,166 @@
+# Part 3 — Magic Methods (Dunder Methods)
+
+**Course:** PRG1406 — Advanced Programming (Python and C)  
+**Institution:** Burkina Institute of Technology  
+**Group:** 8  
+**Author (Part 3):** COMPAORE Salamata  
+
+---
+
+## Introduction
+
+In Python, **magic methods** (also called **dunder methods**, short for *double underscore*) are special built-in methods that allow classes to define how they behave with standard Python operations and built-in functions.
+
+They follow the naming pattern `__methodname__` — two underscores before and after the name.
+
+In our **Gym Member Management System**, we used three dunder methods across the `Member` and `PremiumMember` classes:
+
+| Method | Used in | Purpose |
+|---|---|---|
+| `__str__` | `Member` | Human-readable string representation |
+| `__eq__` | `Member` | Equality comparison between two members |
+| `__len__` | `PremiumMember` | Number of premium services subscribed |
+
+---
+
+## 1. `__str__` — String Representation
+
+### What it does
+
+The `__str__` method defines what is returned when you call `str()` on an object, or when you use `print()` on it. It is meant to produce a **readable, user-friendly** description of the object.
+
+Without `__str__`, Python would display something like:
+```
+<Member object at 0x7f3c2a1b4d90>
+```
+...which is completely useless to a user.
+
+### Implementation in our program
+
+```python
+class Member:
+    def __init__(self, name, age, member_id):
+        self.name = name
+        self.age = age
+        self.member_id = member_id
+
+    def __str__(self):
+        return f"Member[ID: {self.member_id}] {self.name}, Age: {self.age}"
+```
+
+### How it is triggered
+
+```python
+m = Member("Salamata Compaoré", 22, "M001")
+print(m)
+# Output: Member[ID: M001] Salamata Compaoré, Age: 22
+
+print(str(m))
+# Output: Member[ID: M001] Salamata Compaoré, Age: 22
+```
+
+### Why it matters
+
+In a gym management system, staff need to quickly read member information. `__str__` makes every `print()` call produce a clean, informative line instead of a memory address. It also helps with logging and debugging.
+
+---
+
+## 2. `__eq__` — Equality Comparison
+
+### What it does
+
+The `__eq__` method defines the behavior of the `==` operator between two objects of the same class.
+
+By default, Python compares objects **by identity** (i.e., are they the exact same object in memory?). This means two `Member` objects with the same ID would be considered *different* unless we override `__eq__`.
+
+### Implementation in our program
+
+```python
+class Member:
+    def __eq__(self, other):
+        if not isinstance(other, Member):
+            return NotImplemented
+        return self.member_id == other.member_id
+```
+
+### How it is triggered
+
+```python
+m1 = Member("Salamata Compaoré", 22, "M001")
+m2 = Member("Salamata Compaoré", 25, "M001")  # same ID, different age
+m3 = Member("Moussa Kiendrebeogo", 30, "M002")
+
+print(m1 == m2)  # True  → same member_id
+print(m1 == m3)  # False → different member_id
+print(m1 == "M001")  # NotImplemented → compared to a non-Member
+```
+
+### Why it matters
+
+In a gym database, a **member ID is the unique identifier** for each person. Two `Member` objects are the same person if and only if they share the same `member_id`, regardless of any other field that may have been updated (e.g., age, contact info). This method enforces that business logic cleanly at the class level.
+
+The `isinstance()` check also makes the method safe: comparing a `Member` to a non-`Member` object returns `NotImplemented` (Python's standard way of signaling the comparison doesn't apply), rather than crashing.
+
+---
+
+## 3. `__len__` — Length / Count
+
+### What it does
+
+The `__len__` method defines what is returned when you call `len()` on an object. It must return a **non-negative integer**.
+
+This method is typically used on container-like objects (lists, strings, etc.), but we can define it on any class to give it a meaningful notion of "size" or "count".
+
+### Implementation in our program
+
+```python
+class PremiumMember(Member):
+    def __init__(self, name, age, member_id, services):
+        super().__init__(name, age, member_id)
+        self.services = services  # list of subscribed premium services
+
+    def __len__(self):
+        return len(self.services)
+```
+
+### How it is triggered
+
+```python
+pm = PremiumMember("Aïssata Ouédraogo", 28, "PM007", ["Pool", "Sauna", "Personal Trainer"])
+
+print(len(pm))   # Output: 3
+print(f"{pm.name} has subscribed to {len(pm)} premium service(s).")
+# Output: Aïssata Ouédraogo has subscribed to 3 premium service(s).
+```
+
+### Why it matters
+
+`PremiumMember` clients pay for specific add-on services. Using `__len__` allows any part of the code to call `len(member)` to instantly know how many services that member is enrolled in — no need to access `.services` directly. This improves **encapsulation** and makes the code more readable and Pythonic.
+
+---
+
+## Summary Table
+
+| Method | Triggered by | Returns | Used in class |
+|---|---|---|---|
+| `__str__` | `print(obj)` / `str(obj)` | A formatted string with member info | `Member` |
+| `__eq__` | `obj1 == obj2` | `True` / `False` based on `member_id` | `Member` |
+| `__len__` | `len(obj)` | Number of premium services | `PremiumMember` |
+
+---
+
+## Key Takeaways
+
+1. **Dunder methods make custom classes behave like built-in Python types.** They let your objects respond naturally to operators (`==`, `len()`, `print()`) without the caller needing to know the internal structure.
+
+2. **`__str__` improves readability** — always define it for classes that will be printed or logged.
+
+3. **`__eq__` encodes business logic** — in our system, identity is based on `member_id`, not object identity.
+
+4. **`__len__` turns a class into a container-aware object** — perfect when an object *owns* a collection (like a list of services) and you want a quick count.
+
+> *"Python's dunder methods are the foundation of writing clean, expressive, and Pythonic object-oriented code."*
+
+---
+
+*Prepared by COMPAORE Salamata — Group 8, PRG1406, Burkina Institute of Technology*
